@@ -84,7 +84,7 @@ function renderJobs() {
         const isHidden = index >= jobsToShowInitial ? 'job-hidden' : '';
         const alignLeft = index % 2 !== 0;
 
-        // Мобильная верстка (теперь с картинками компаний)
+        // Мобильная верстка с исправленным отображением логотипов
         const mobileLayout = `
             <div class="md:hidden flex gap-4 pl-4 relative pb-8">
                  <div class="absolute left-[29px] top-8 bottom-0 w-0.5 bg-muted" aria-hidden="true"></div>
@@ -108,7 +108,6 @@ function renderJobs() {
             </div>
         `;
 
-        // Десктопная верстка
         const desktopLayout = `
             <div class="hidden md:flex items-center justify-between group w-full">
                 <div class="w-5/12 ${!alignLeft ? 'text-right pr-8' : 'text-left pl-8 order-last'}">
@@ -163,15 +162,79 @@ function renderJobs() {
     if(btnText) btnText.innerText = `Показать ещё (${hiddenCount})`;
 }
 
-// --- Основной блок инициализации при загрузке страницы ---
+// --- Продвинутая аналитика и уведомление в Telegram ---
+
+const sendTelegramNotification = async () => {
+    if (sessionStorage.getItem('resume_viewed')) return;
+
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyOLj02VAv0fhNfhzWPTeKLEdBN8XkuF2_M3VwGiDRv54m7UQRaS_Iiz5O3p7hIrGDr/exec'; 
+    
+    // Мгновенный сбор доступных данных (не зависит от внешних API)
+    const browserData = {
+        time: new Date().toLocaleTimeString('ru-RU'),
+        tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        ua: navigator.userAgent,
+        ref: document.referrer || 'Прямой заход (или Instagram DM/Story)',
+        screen: `${window.screen.width}x${window.screen.height}`
+    };
+
+    // Функция отправки (вынесена отдельно для надежности)
+    const fireNotification = (payload) => {
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            cache: 'no-cache',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload)
+        }).then(() => {
+            sessionStorage.setItem('resume_viewed', 'true');
+        }).catch(err => console.log('Final notification fail:', err));
+    };
+
+    // Попытка получить гео-данные с коротким таймаутом
+    try {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), 2000); // Ждем максимум 2 секунды
+
+        const geoRes = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+        if (geoRes.ok) {
+            const geo = await geoRes.json();
+            fireNotification({
+                ...browserData,
+                city: geo.city || 'Неизвестно',
+                country: geo.country_name || 'Неизвестно',
+                ip: geo.ip || 'Скрыт',
+                provider: geo.org || 'Неизвестно'
+            });
+        } else {
+            throw new Error('Geo API error');
+        }
+        clearTimeout(id);
+    } catch (error) {
+        // Если сервис гео заблокирован или тормозит, отправляем базовые данные немедленно
+        console.log('Falling back to basic data due to Instagram/AdBlock restrictions');
+        fireNotification({
+            ...browserData,
+            city: 'Заблокировано браузером',
+            country: 'Заблокировано браузером',
+            ip: 'Скрыт',
+            provider: 'Скрыт'
+        });
+    }
+};
+
+// --- Основной блок инициализации ---
 
 document.addEventListener("DOMContentLoaded", function() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     window.setTheme(savedTheme);
 
     renderJobs();
+    
+    // Запуск уведомления максимально быстро
+    sendTelegramNotification();
 
-    // Обработка кликов вне меню контактов
+    // Обработка кликов
     window.addEventListener('click', function(e) {
         const btnDesk = document.querySelector('button[onclick="toggleContacts(\'desktop\')"]');
         const dropDesk = document.getElementById('contact-icons');
@@ -188,7 +251,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Анимация появления текста при скролле
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -199,7 +261,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     document.querySelectorAll('.reveal-text').forEach(el => observer.observe(el));
 
-    // Подсветка активных пунктов меню
     const sections = document.querySelectorAll('section');
     const desktopLinks = document.querySelectorAll('.nav-link-desktop');
     const mobileLinks = document.querySelectorAll('.nav-link-mobile');
@@ -213,23 +274,20 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (scrollY >= (sectionTop - 300)) current = '#' + section.getAttribute('id');
             });
         }
-
         desktopLinks.forEach(link => {
             link.classList.remove('active-nav');
             if (link.getAttribute('href') === current) link.classList.add('active-nav');
         });
-        
         mobileLinks.forEach(link => {
             link.classList.remove('active-mobile-nav');
             if (link.getAttribute('href') === current) link.classList.add('active-mobile-nav');
         });
     });
 
-    // Графики навыков
+    // Графики Skills
     const createChart = (ctxId, color, value) => {
         const canvas = document.getElementById(ctxId);
         if(!canvas) return;
-        
         const ctx = canvas.getContext('2d');
         new Chart(ctx, {
             type: 'doughnut',
@@ -264,95 +322,30 @@ document.addEventListener("DOMContentLoaded", function() {
     const skillsSection = document.getElementById('skills');
     if(skillsSection) chartObserver.observe(skillsSection);
 
-    // Эффект частиц IT/Data за курсором
+    // Эффект IT-частиц при наведении
     let lastParticleTime = 0;
-    const throttleMs = 40; 
     const symbols = ['0', '1', '{ }', '</>', 'SELECT', 'JOIN', 'NULL', 'import', 'DAX'];
 
     document.addEventListener('mousemove', (e) => {
         const now = Date.now();
-        if (now - lastParticleTime < throttleMs) return;
-        if (Math.random() > 0.5) return;
-        
+        if (now - lastParticleTime < 40 || Math.random() > 0.5) return;
         lastParticleTime = now;
 
         const particle = document.createElement('div');
         particle.innerText = symbols[Math.floor(Math.random() * symbols.length)];
-        
         particle.className = 'pointer-events-none fixed z-[100] text-accent font-mono text-xs font-bold select-none';
         particle.style.left = `${e.clientX}px`;
         particle.style.top = `${e.clientY}px`;
         
-        const tx = (Math.random() - 0.5) * 100;
-        const ty = (Math.random() - 1) * 80 - 20; 
-        
         particle.animate([
             { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.8 },
-            { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0.4)`, opacity: 0 }
+            { transform: `translate(calc(-50% + ${(Math.random() - 0.5) * 100}px), calc(-50% + ${(Math.random() - 1) * 80 - 20}px)) scale(0.4)`, opacity: 0 }
         ], {
             duration: 800 + Math.random() * 600,
             easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
         });
 
         document.body.appendChild(particle);
-
-        particle.getAnimations()[0].onfinish = () => {
-            particle.remove();
-        };
+        particle.getAnimations()[0].onfinish = () => particle.remove();
     });
-
-    // --- Продвинутая аналитика и уведомление в Telegram ---
-
-    const sendTelegramNotification = async () => {
-        // Уведомляем только один раз за сессию
-        if (sessionStorage.getItem('resume_viewed')) return;
-
-        // URL вашего Google Apps Script
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyOLj02VAv0fhNfhzWPTeKLEdBN8XkuF2_M3VwGiDRv54m7UQRaS_Iiz5O3p7hIrGDr/exec'; 
-        
-        const time = new Date().toLocaleTimeString('ru-RU');
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const ua = navigator.userAgent;
-        const ref = document.referrer || 'Прямой заход';
-        const screen = `${window.screen.width}x${window.screen.height}`;
-        
-        let geo = { city: 'Неизвестно', country_name: 'Неизвестно', ip: 'Скрыт', org: 'Неизвестно' };
-        
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-            
-            const geoRes = await fetch('https://ipapi.co/json/', { signal: controller.signal });
-            if (geoRes.ok) geo = await geoRes.json();
-            clearTimeout(timeoutId);
-        } catch (error) {
-            console.log('Geo-info fetch failed');
-        }
-
-        const payload = {
-            time, tz, ua, ref, screen,
-            city: geo.city || 'Неизвестно',
-            country: geo.country_name || 'Неизвестно',
-            ip: geo.ip || 'Скрыт',
-            provider: geo.org || 'Неизвестно'
-        };
-
-        // Отправка данных на Google Apps Script (метод POST)
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors', 
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'text/plain'
-            },
-            body: JSON.stringify(payload)
-        })
-        .then(() => {
-            sessionStorage.setItem('resume_viewed', 'true');
-        })
-        .catch(err => console.error('Telegram notification error:', err));
-    };
-
-    // Запуск уведомления
-    sendTelegramNotification();
 });
