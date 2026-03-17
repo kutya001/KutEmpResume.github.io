@@ -87,7 +87,17 @@ function renderJobs() {
                 <div class="bg-surface p-5 rounded-xl border border-muted shadow-sm w-full">
                     <span class="text-xs font-bold text-accent uppercase mb-1 block">${job.dates}</span>
                     <h3 class="font-bold text-lg text-primary">${job.role}</h3>
-                    <div class="text-sm font-semibold text-secondary mb-2">${job.company}</div>
+                    
+                    <div class="flex items-center gap-3 my-3">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-surface border border-muted shadow-sm flex items-center justify-center relative overflow-hidden">
+                            <img src="${job.img}" class="w-full h-full object-cover" alt="Логотип ${job.company}" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                            <div class="hidden absolute inset-0 flex items-center justify-center bg-white text-secondary" aria-hidden="true">
+                                <i class="fas ${job.icon} text-sm"></i>
+                            </div>
+                        </div>
+                        <div class="text-sm font-semibold text-secondary">${job.company}</div>
+                    </div>
+                    
                     <p class="text-sm text-muted">${job.desc}</p>
                 </div>
             </div>
@@ -241,4 +251,41 @@ document.addEventListener("DOMContentLoaded", function() {
     
     const skillsSection = document.getElementById('skills');
     if(skillsSection) chartObserver.observe(skillsSection);
+
+    // Эффект частиц IT/Data за курсором
+    let lastParticleTime = 0;
+    const throttleMs = 40; 
+    const symbols = ['0', '1', '{ }', '</>', 'SELECT', 'JOIN', 'NULL', 'import', 'DAX'];
+
+    document.addEventListener('mousemove', (e) => {
+        const now = Date.now();
+        if (now - lastParticleTime < throttleMs) return;
+        if (Math.random() > 0.5) return;
+        
+        lastParticleTime = now;
+
+        const particle = document.createElement('div');
+        particle.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        
+        particle.className = 'pointer-events-none fixed z-[100] text-accent font-mono text-xs font-bold select-none';
+        particle.style.left = `${e.clientX}px`;
+        particle.style.top = `${e.clientY}px`;
+        
+        const tx = (Math.random() - 0.5) * 100;
+        const ty = (Math.random() - 1) * 80 - 20; 
+        
+        particle.animate([
+            { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.8 },
+            { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0.4)`, opacity: 0 }
+        ], {
+            duration: 800 + Math.random() * 600,
+            easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
+        });
+
+        document.body.appendChild(particle);
+
+        particle.getAnimations()[0].onfinish = () => {
+            particle.remove();
+        };
+    });
 });
