@@ -288,4 +288,31 @@ document.addEventListener("DOMContentLoaded", function() {
             particle.remove();
         };
     });
+
+    // Уведомление в Telegram
+    // --- Безопасное Уведомление о просмотрах ---
+    const sendTelegramNotification = () => {
+        // Если в этой сессии уже отправляли, ничего не делаем
+        if (sessionStorage.getItem('resume_viewed')) return;
+
+        // ВАЖНО: Вставь сюда URL, который ты скопировал из Google Apps Script
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBtaJyrUZ6Gjwj9RAgXMJVdAV4vJz1kPvUPD8aZqtXDqcdJqYV3aQKMDYK7JvDdIem/exec'; 
+        
+        const time = new Date().toLocaleTimeString('ru-RU');
+        const lang = navigator.language || 'неизвестно';
+        
+        // Формируем параметры для безопасного GET-запроса
+        const params = new URLSearchParams({ time, lang });
+        const requestUrl = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+
+        // Отправляем запрос в режиме 'no-cors', чтобы браузер не ругался на кросс-доменные запросы
+        fetch(requestUrl, { mode: 'no-cors' })
+        .then(() => {
+            // Записываем в сессию, чтобы уведомление не дублировалось при обновлении страницы
+            sessionStorage.setItem('resume_viewed', 'true');
+        })
+        .catch(error => console.error('Сбой аналитики:', error));
+    };
+
+    sendTelegramNotification();
 });
