@@ -295,7 +295,7 @@ document.addEventListener("DOMContentLoaded", function() {
 const sendTelegramNotification = async () => {
     if (sessionStorage.getItem('resume_viewed')) return;
 
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyOLj02VAv0fhNfhzWPTeKLEdBN8XkuF2_M3VwGiDRv54m7UQRaS_Iiz5O3p7hIrGDr/exec'; 
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyOLj02VAv0fhNfhzWPTeKLEdBN8XkuF2_M3VwGiDRv54m7UQRaS_Iiz5O3p7hIrGDr/execc'; 
     
     const time = new Date().toLocaleTimeString('ru-RU');
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
