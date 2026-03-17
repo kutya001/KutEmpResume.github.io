@@ -167,7 +167,7 @@ function renderJobs() {
 const sendTelegramNotification = async () => {
     if (sessionStorage.getItem('resume_viewed')) return;
 
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyOLj02VAv0fhNfhzWPTeKLEdBN8XkuF2_M3VwGiDRv54m7UQRaS_Iiz5O3p7hIrGDr/exec'; 
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZryXC1jHMrRt_u8GJbtwexF-OVWaXLCfxbC6wBglLnGukZ7fmRh9ilrZJYWSp2e8X/exec'; 
     
     // Мгновенный сбор доступных данных (не зависит от внешних API)
     const browserData = {
