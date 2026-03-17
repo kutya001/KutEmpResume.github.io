@@ -13,6 +13,8 @@ const jobs = [
     { role: 'Бухгалтер', company: 'Эквилибри Консалт', dates: 'Фев 2020 — Фев 2021', desc: 'Расчётный бухгалтер, помощник главного бухгалтера.', img: 'equilibri.png', icon: 'fa-calculator' }
 ];
 
+// --- Глобальные функции управления интерфейсом ---
+
 window.setTheme = function(themeName) {
     document.documentElement.setAttribute('data-theme', themeName);
     localStorage.setItem('theme', themeName);
@@ -70,6 +72,8 @@ window.closeModal = function() {
     modal.setAttribute('aria-hidden', 'true');
 };
 
+// --- Функция рендеринга опыта работы ---
+
 function renderJobs() {
     const container = document.getElementById('experience-container');
     if(!container) return; 
@@ -80,6 +84,7 @@ function renderJobs() {
         const isHidden = index >= jobsToShowInitial ? 'job-hidden' : '';
         const alignLeft = index % 2 !== 0;
 
+        // Мобильная верстка (теперь с картинками компаний)
         const mobileLayout = `
             <div class="md:hidden flex gap-4 pl-4 relative pb-8">
                  <div class="absolute left-[29px] top-8 bottom-0 w-0.5 bg-muted" aria-hidden="true"></div>
@@ -103,6 +108,7 @@ function renderJobs() {
             </div>
         `;
 
+        // Десктопная верстка
         const desktopLayout = `
             <div class="hidden md:flex items-center justify-between group w-full">
                 <div class="w-5/12 ${!alignLeft ? 'text-right pr-8' : 'text-left pl-8 order-last'}">
@@ -157,12 +163,15 @@ function renderJobs() {
     if(btnText) btnText.innerText = `Показать ещё (${hiddenCount})`;
 }
 
+// --- Основной блок инициализации при загрузке страницы ---
+
 document.addEventListener("DOMContentLoaded", function() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     window.setTheme(savedTheme);
 
     renderJobs();
 
+    // Обработка кликов вне меню контактов
     window.addEventListener('click', function(e) {
         const btnDesk = document.querySelector('button[onclick="toggleContacts(\'desktop\')"]');
         const dropDesk = document.getElementById('contact-icons');
@@ -179,6 +188,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
+    // Анимация появления текста при скролле
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -189,6 +199,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     document.querySelectorAll('.reveal-text').forEach(el => observer.observe(el));
 
+    // Подсветка активных пунктов меню
     const sections = document.querySelectorAll('section');
     const desktopLinks = document.querySelectorAll('.nav-link-desktop');
     const mobileLinks = document.querySelectorAll('.nav-link-mobile');
@@ -214,6 +225,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
+    // Графики навыков
     const createChart = (ctxId, color, value) => {
         const canvas = document.getElementById(ctxId);
         if(!canvas) return;
@@ -289,56 +301,58 @@ document.addEventListener("DOMContentLoaded", function() {
         };
     });
 
-    // Уведомление в Telegram
-    // --- Безопасное Уведомление о просмотрах ---
-    // --- Продвинутая аналитика просмотров ---
-const sendTelegramNotification = async () => {
-    if (sessionStorage.getItem('resume_viewed')) return;
+    // --- Продвинутая аналитика и уведомление в Telegram ---
 
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyOLj02VAv0fhNfhzWPTeKLEdBN8XkuF2_M3VwGiDRv54m7UQRaS_Iiz5O3p7hIrGDr/exec'; 
-    
-    const time = new Date().toLocaleTimeString('ru-RU');
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const ua = navigator.userAgent;
-    const ref = document.referrer || 'Прямой заход';
-    const screen = `${window.screen.width}x${window.screen.height}`;
-    
-    let geo = { city: 'Неизвестно', country_name: 'Неизвестно', ip: 'Скрыт', org: 'Неизвестно' };
-    
-    try {
-        // Добавляем timeout, чтобы скрипт не вис, если сервис геолокации недоступен
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const sendTelegramNotification = async () => {
+        // Уведомляем только один раз за сессию
+        if (sessionStorage.getItem('resume_viewed')) return;
+
+        // URL вашего Google Apps Script
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyOLj02VAv0fhNfhzWPTeKLEdBN8XkuF2_M3VwGiDRv54m7UQRaS_Iiz5O3p7hIrGDr/exec'; 
         
-        const geoRes = await fetch('https://ipapi.co/json/', { signal: controller.signal });
-        if (geoRes.ok) geo = await geoRes.json();
-        clearTimeout(timeoutId);
-    } catch (error) {
-        console.log('Geo-info fetch failed');
-    }
+        const time = new Date().toLocaleTimeString('ru-RU');
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const ua = navigator.userAgent;
+        const ref = document.referrer || 'Прямой заход';
+        const screen = `${window.screen.width}x${window.screen.height}`;
+        
+        let geo = { city: 'Неизвестно', country_name: 'Неизвестно', ip: 'Скрыт', org: 'Неизвестно' };
+        
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            
+            const geoRes = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+            if (geoRes.ok) geo = await geoRes.json();
+            clearTimeout(timeoutId);
+        } catch (error) {
+            console.log('Geo-info fetch failed');
+        }
 
-    const payload = {
-        time, tz, ua, ref, screen,
-        city: geo.city || 'Неизвестно',
-        country: geo.country_name || 'Неизвестно',
-        ip: geo.ip || 'Скрыт',
-        provider: geo.org || 'Неизвестно'
+        const payload = {
+            time, tz, ua, ref, screen,
+            city: geo.city || 'Неизвестно',
+            country: geo.country_name || 'Неизвестно',
+            ip: geo.ip || 'Скрыт',
+            provider: geo.org || 'Неизвестно'
+        };
+
+        // Отправка данных на Google Apps Script (метод POST)
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            cache: 'no-cache',
+            headers: {
+                'Content-Type': 'text/plain'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            sessionStorage.setItem('resume_viewed', 'true');
+        })
+        .catch(err => console.error('Telegram notification error:', err));
     };
 
-    // ВАЖНО: Google Apps Script не поддерживает CORS для POST запросов с типом 'application/json'
-    // Поэтому мы отправляем данные как простой текст, а на стороне скрипта парсим JSON.
-    fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors', // Позволяет отправить запрос без ошибок CORS
-        cache: 'no-cache',
-        headers: {
-            'Content-Type': 'text/plain'
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(() => {
-        sessionStorage.setItem('resume_viewed', 'true');
-    })
-    .catch(err => console.error('Error:', err));
-};
+    // Запуск уведомления
+    sendTelegramNotification();
 });
