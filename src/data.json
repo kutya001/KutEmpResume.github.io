@@ -75,6 +75,16 @@
         { "name": "Управленческий учет", "school": "CIPAEN", "year": "2021", "icon": "fas fa-chart-pie", "iconColor": "text-green-600" }
       ]
     },
+    "contactForm": {
+      "title": "Напишите мне",
+      "namePlaceholder": "Ваше имя",
+      "contactPlaceholder": "Телефон, email или Telegram",
+      "messagePlaceholder": "Ваше сообщение...",
+      "sendBtn": "Отправить",
+      "sending": "Отправка...",
+      "success": "Сообщение отправлено!",
+      "error": "Ошибка отправки. Попробуйте ещё раз."
+    },
     "footer": {
       "copyright": "© 2026. Designed with Data Driven Mindset."
     }
@@ -155,6 +165,16 @@
         { "name": "Башкаруу эсеби", "school": "CIPAEN", "year": "2021", "icon": "fas fa-chart-pie", "iconColor": "text-green-600" }
       ]
     },
+    "contactForm": {
+      "title": "Мага жазыңыз",
+      "namePlaceholder": "Атыңыз",
+      "contactPlaceholder": "Телефон, email же Telegram",
+      "messagePlaceholder": "Билдирүүңүз...",
+      "sendBtn": "Жөнөтүү",
+      "sending": "Жөнөтүлүүдө...",
+      "success": "Билдирүү жөнөтүлдү!",
+      "error": "Жөнөтүү катасы. Дагы аракет кылыңыз."
+    },
     "footer": {
       "copyright": "© 2026. Designed with Data Driven Mindset."
     }
@@ -234,6 +254,16 @@
         { "name": "1C Programming Basics", "school": "1C Kato", "year": "2021", "icon": "fas fa-cube", "iconColor": "text-yellow-600" },
         { "name": "Management Accounting", "school": "CIPAEN", "year": "2021", "icon": "fas fa-chart-pie", "iconColor": "text-green-600" }
       ]
+    },
+    "contactForm": {
+      "title": "Write to me",
+      "namePlaceholder": "Your name",
+      "contactPlaceholder": "Phone, email or Telegram",
+      "messagePlaceholder": "Your message...",
+      "sendBtn": "Send",
+      "sending": "Sending...",
+      "success": "Message sent!",
+      "error": "Failed to send. Please try again."
     },
     "footer": {
       "copyright": "© 2026. Designed with Data Driven Mindset."

@@ -17,9 +17,38 @@ export default function App() {
   const [lang, setLang] = useState(localStorage.getItem('lang') || 'ru');
   const data = RESUME_DATA[lang];
 
+  const [formData, setFormData] = useState({ name: '', contact: '', message: '' });
+  const [formStatus, setFormStatus] = useState(null); // null | 'sending' | 'success' | 'error'
+
   const handleLangChange = (l) => {
     setLang(l);
     localStorage.setItem('lang', l);
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setFormStatus('sending');
+    try {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        cache: 'no-cache',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          type: 'contact_form',
+          name: formData.name,
+          contact: formData.contact,
+          message: formData.message,
+          time: new Date().toLocaleString('ru-RU'),
+        }),
+      });
+      setFormStatus('success');
+      setFormData({ name: '', contact: '', message: '' });
+      setTimeout(() => setFormStatus(null), 4000);
+    } catch {
+      setFormStatus('error');
+      setTimeout(() => setFormStatus(null), 4000);
+    }
   };
 
   useEffect(() => {
@@ -258,7 +287,7 @@ export default function App() {
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold">{data.nav.contact}</h2>
           </div>
-          <div className="flex justify-center gap-6">
+          <div className="flex justify-center gap-6 mb-12">
             <a href="https://t.me/kutya_omuraliev" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-blue-400 text-3xl transition-transform hover:-translate-y-1">
               <i className="fab fa-telegram" />
             </a>
@@ -272,6 +301,48 @@ export default function App() {
               <i className="fas fa-phone-alt" />
             </a>
           </div>
+
+          <form onSubmit={handleFormSubmit} className="max-w-lg mx-auto space-y-4">
+            <h3 className="text-xl font-bold text-center mb-4">{data.contactForm.title}</h3>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder={data.contactForm.namePlaceholder}
+              className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            <input
+              type="text"
+              required
+              value={formData.contact}
+              onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+              placeholder={data.contactForm.contactPlaceholder}
+              className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            <textarea
+              required
+              rows={4}
+              value={formData.message}
+              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              placeholder={data.contactForm.messagePlaceholder}
+              className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"
+            />
+            <button
+              type="submit"
+              disabled={formStatus === 'sending'}
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-sm transition-all flex items-center justify-center gap-2"
+            >
+              <i className="fas fa-paper-plane" />
+              {formStatus === 'sending' ? data.contactForm.sending : data.contactForm.sendBtn}
+            </button>
+            {formStatus === 'success' && (
+              <p className="text-center text-green-400 text-sm font-medium animate-pulse">{data.contactForm.success}</p>
+            )}
+            {formStatus === 'error' && (
+              <p className="text-center text-red-400 text-sm font-medium">{data.contactForm.error}</p>
+            )}
+          </form>
         </section>
       </main>
 
