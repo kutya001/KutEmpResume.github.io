@@ -1,17 +1,8 @@
 import './style.css';
 import Chart from 'chart.js/auto';
+import resumeData from './data.json';
 
-const jobs = [
-    { role: 'Разработчик "Отчетность и Аналитика"', company: 'Кумтор Голд Компани', dates: 'Окт 2025 — Наст. время', desc: 'Исправление багов, написание программного кода, оптимизация процессов.', img: 'kgc.jpg', icon: 'fa-code' },
-    { role: 'Бизнес-аналитик', company: 'Кумтор Голд Компани', dates: 'Авг 2023 — Окт 2025', desc: 'Анализ бизнес процессов, разработка и составление ТЗ, тестирование, документирование.', img: 'kgc.jpg', icon: 'fa-project-diagram' },
-    { role: 'Ментор (Data Analysis)', company: 'CodeInfinity', dates: 'Июнь 2024 — Март 2025', desc: 'Обучение по Анализу данных: Excel, SQL, Power BI.', img: 'CodeInfinity.jpg', icon: 'fa-chalkboard-teacher' },
-    { role: 'Тренер-консультант', company: 'DenMar', dates: 'Фев 2023 — Янв 2025', desc: 'Преподавание уроков и проведение тренингов по MS Excel (Pro уровень).', img: 'DenMar.jpg', icon: 'fa-file-excel' },
-    { role: 'Ведущий специалист', company: 'Газпромнефть Азия', dates: 'Дек 2022 — Май 2023', desc: 'Управленческая отчетность: свод, консолидация информации, глубокий анализ данных.', img: 'gazprom.png', icon: 'fa-gas-pump' },
-    { role: 'Тренер Excel', company: 'GoFare', dates: 'Июнь 2022 — Сен 2022', desc: 'Обучение студентов основам и продвинутому анализу данных в MS Excel.', img: 'GoFare.jpg', icon: 'fa-graduation-cap' },
-    { role: 'Бизнес аналитик', company: 'Текстиль Транс - Салкын', dates: 'Март 2021 — Май 2023', desc: 'Разработка отчётов, Power BI, Excel VBA. ТЗ для 1С программистов.', img: 'textiletrans.jpg', icon: 'fa-tshirt' },
-    { role: 'Бизнес-аналитик', company: 'Маткасымов', dates: 'Окт 2021 — Март 2022', desc: 'Оптимизация производства, отчетность, расчет себестоимости.', img: 'matkasym.jpg', icon: 'fa-store' },
-    { role: 'Бухгалтер', company: 'Эквилибри Консалт', dates: 'Фев 2020 — Фев 2021', desc: 'Расчётный бухгалтер, помощник главного бухгалтера.', img: 'equilibri.png', icon: 'fa-calculator' }
-];
+let currentLang = localStorage.getItem('lang') || 'ru';
 
 // --- Глобальные функции управления интерфейсом ---
 
@@ -72,9 +63,51 @@ window.closeModal = function() {
     modal.setAttribute('aria-hidden', 'true');
 };
 
+// --- Интернационализация ---
+
+window.setLang = function(lang) {
+    if (!resumeData[lang]) return;
+    currentLang = lang;
+    localStorage.setItem('lang', lang);
+    document.documentElement.lang = lang;
+    updateLangButtons();
+    renderContent();
+};
+
+function updateLangButtons() {
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.remove('bg-accent', 'text-white');
+        btn.classList.add('text-muted');
+        if (btn.dataset.lang === currentLang) {
+            btn.classList.add('bg-accent', 'text-white');
+            btn.classList.remove('text-muted');
+        }
+    });
+}
+
+function renderContent() {
+    const data = resumeData[currentLang];
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const keys = el.getAttribute('data-i18n').split('.');
+        let value = data;
+        for (const key of keys) {
+            value = value ? value[key] : null;
+        }
+        if (value != null) {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = value;
+            else el.textContent = value;
+        }
+    });
+
+    renderJobs(data.experience.jobs);
+    renderSkillsDetail(data.skills.levels);
+    renderEducation(data.education);
+}
+
 // --- Функция рендеринга опыта работы ---
 
-function renderJobs() {
+function renderJobs(jobs) {
     const container = document.getElementById('experience-container');
     if(!container) return; 
 
@@ -154,12 +187,77 @@ function renderJobs() {
         return `<div class="relative z-10 reveal-text visible ${isHidden}">${mobileLayout}${desktopLayout}</div>`;
     }).join('');
 
-    const centerLine = container.innerHTML; 
+    const centerLine = '<div class="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-muted md:-translate-x-1/2 z-0" aria-hidden="true"></div>';
     container.innerHTML = centerLine + html; 
     
     const hiddenCount = jobs.length - jobsToShowInitial;
     const btnText = document.getElementById('show-more-text');
-    if(btnText) btnText.innerText = `Показать ещё (${hiddenCount})`;
+    const wrapper = document.getElementById('show-more-wrapper');
+    if (hiddenCount > 0) {
+        if(btnText) btnText.innerText = `${resumeData[currentLang].experience.showMore} (${hiddenCount})`;
+        if(wrapper) wrapper.style.display = '';
+    } else {
+        if(wrapper) wrapper.style.display = 'none';
+    }
+}
+
+// --- Функция рендеринга навыков ---
+
+function renderSkillsDetail(levels) {
+    const container = document.getElementById('skills-detail-container');
+    if (!container) return;
+
+    const styleMap = {
+        advanced: 'bg-surface text-accent border-accent',
+        intermediate: 'bg-surface text-primary border-secondary',
+        basic: 'bg-background text-muted border-muted'
+    };
+
+    container.innerHTML = levels.map(level => `
+        <div>
+            <h4 class="text-sm font-bold text-muted uppercase tracking-wider mb-3">${level.title}</h4>
+            <div class="flex flex-wrap gap-2">
+                ${level.items.map(item => `<span class="px-3 py-1 ${styleMap[level.type] || styleMap.basic} rounded-lg text-sm font-medium border shadow-sm">${item}</span>`).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+// --- Функция рендеринга образования ---
+
+function renderEducation(edu) {
+    const academicContainer = document.getElementById('education-academic-container');
+    const coursesContainer = document.getElementById('education-courses-container');
+
+    if (academicContainer) {
+        academicContainer.innerHTML = edu.academic.map((item, i) => `
+            <div class="bg-surface p-6 rounded-xl border-l-4 ${i === 0 ? 'border-accent' : 'border-muted'} shadow-sm hover:translate-x-2 transition-transform duration-300">
+                <div class="flex flex-col justify-start items-start">
+                    <h4 class="font-bold text-lg text-primary">${item.name}</h4>
+                    <p class="text-secondary text-sm font-medium mt-1">${item.speciality}</p>
+                    <div class="mt-2 flex items-center gap-2">
+                        <span class="bg-surface border border-muted text-primary shadow-sm text-xs font-bold px-2 py-1 rounded">${item.year}</span>
+                        <span class="text-xs text-muted">${item.note}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    if (coursesContainer) {
+        coursesContainer.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            ${edu.courses.map(item => `
+                <div class="bg-surface p-4 rounded-xl border border-muted shadow-sm hover:border-accent hover:shadow-md transition-all group">
+                    <div class="flex items-center justify-between mb-2">
+                        <i class="${item.icon} text-2xl ${item.iconColor} group-hover:scale-110 transition-transform" aria-hidden="true"></i>
+                        <span class="text-xs font-bold text-muted">${item.year}</span>
+                    </div>
+                    <h4 class="font-bold text-primary">${item.name}</h4>
+                    <p class="text-xs text-secondary mt-1">${item.school}</p>
+                </div>
+            `).join('')}
+        </div>`;
+    }
 }
 
 // --- Продвинутая аналитика и уведомление в Telegram ---
@@ -229,7 +327,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     window.setTheme(savedTheme);
 
-    renderJobs();
+    updateLangButtons();
+    renderContent();
     
     // Запуск уведомления максимально быстро
     sendTelegramNotification();
