@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import RESUME_DATA from './data.json';
 import InteractiveBackground from './components/InteractiveBackground';
 import TiltCard from './components/TiltCard';
 
 const BASE = import.meta.env.BASE_URL;
+
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZryXC1jHMrRt_u8GJbtwexF-OVWaXLCfxbC6wBglLnGukZ7fmRh9ilrZJYWSp2e8X/exec';
 
 const skillColors = {
   advanced: 'border-blue-500/50 text-blue-400',
@@ -19,6 +21,59 @@ export default function App() {
     setLang(l);
     localStorage.setItem('lang', l);
   };
+
+  useEffect(() => {
+    if (sessionStorage.getItem('resume_viewed')) return;
+
+    const browserData = {
+      time: new Date().toLocaleTimeString('ru-RU'),
+      tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      ua: navigator.userAgent,
+      ref: document.referrer || 'Прямой заход (или Instagram DM/Story)',
+      screen: `${window.screen.width}x${window.screen.height}`,
+    };
+
+    const fireNotification = (payload) => {
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        cache: 'no-cache',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload),
+      })
+        .then(() => sessionStorage.setItem('resume_viewed', 'true'))
+        .catch((err) => console.log('Final notification fail:', err));
+    };
+
+    (async () => {
+      try {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), 2000);
+        const geoRes = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+        if (geoRes.ok) {
+          const geo = await geoRes.json();
+          fireNotification({
+            ...browserData,
+            city: geo.city || 'Неизвестно',
+            country: geo.country_name || 'Неизвестно',
+            ip: geo.ip || 'Скрыт',
+            provider: geo.org || 'Неизвестно',
+          });
+        } else {
+          throw new Error('Geo API error');
+        }
+        clearTimeout(id);
+      } catch {
+        fireNotification({
+          ...browserData,
+          city: 'Заблокировано браузером',
+          country: 'Заблокировано браузером',
+          ip: 'Скрыт',
+          provider: 'Скрыт',
+        });
+      }
+    })();
+  }, []);
 
   return (
     <div className="relative w-full">
